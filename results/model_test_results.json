@@ -1,0 +1,89 @@
+{
+  "小型实例": {
+    "success": true,
+    "solve_time": 0.004601478576660156,
+    "solution_quality": {
+      "makespan": 11.0,
+      "energy": 12.27193100579386,
+      "cost": 16.95799830648191
+    },
+    "validation": {
+      "mathematical_feasibility": true,
+      "physical_reasonableness": true,
+      "agv_scheduling": true,
+      "battery_management": {
+        "no_zero_battery": true,
+        "battery_in_range": true,
+        "battery_decreasing": true
+      },
+      "constraint_satisfaction": true
+    },
+    "performance_gaps": {
+      "makespan_gap": 0.8333333333333334,
+      "energy_gap": 0.12364610662909352,
+      "cost_gap": 0.13053322043212745,
+      "solve_time": 0.0037245750427246094,
+      "objective_value": 0.7270598744443406,
+      "mip_gap": 0.01992330398024863,
+      "node_count": 1.0
+    }
+  },
+  "标准实例": {
+    "success": true,
+    "solve_time": 0.005317211151123047,
+    "solution_quality": {
+      "makespan": 16.0,
+      "energy": 20.227261878762576,
+      "cost": 26.59149217249587
+    },
+    "validation": {
+      "mathematical_feasibility": true,
+      "physical_reasonableness": true,
+      "agv_scheduling": true,
+      "battery_management": {
+        "no_zero_battery": true,
+        "battery_in_range": true,
+        "battery_decreasing": true
+      },
+      "constraint_satisfaction": true
+    },
+    "performance_gaps": {
+      "makespan_gap": 0.6842105263157895,
+      "energy_gap": 0.0649001688501509,
+      "cost_gap": 0.7727661448330579,
+      "solve_time": 0.004830360412597656,
+      "objective_value": 0.7625540764131551,
+      "mip_gap": 0.0,
+      "node_count": 1.0
+    }
+  },
+  "中等实例": {
+    "success": true,
+    "solve_time": 0.01034855842590332,
+    "solution_quality": {
+      "makespan": 18.0,
+      "energy": 25.370262937333468,
+      "cost": 37.447094383758184
+    },
+    "validation": {
+      "mathematical_feasibility": true,
+      "physical_reasonableness": true,
+      "agv_scheduling": true,
+      "battery_management": {
+        "no_zero_battery": true,
+        "battery_in_range": true,
+        "battery_decreasing": true
+      },
+      "constraint_satisfaction": true
+    },
+    "performance_gaps": {
+      "makespan_gap": 1.25,
+      "energy_gap": 0.1356404071644696,
+      "cost_gap": 1.4964729589172123,
+      "solve_time": 0.009650230407714844,
+      "objective_value": 0.9767048365029594,
+      "mip_gap": 0.02559626927773992,
+      "node_count": 1.0
+    }
+  }
+}

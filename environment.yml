@@ -1,0 +1,17 @@
+name: fjsp_agv_research
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - scikit-learn
+  - jupyter
+  - pip
+  - pip:
+    - gurobipy
+    - seaborn
+    - tqdm
