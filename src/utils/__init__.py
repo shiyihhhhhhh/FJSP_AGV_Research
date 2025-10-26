@@ -1,5 +1,9 @@
-from .data_generator import DataGenerator
-from .visualization import Visualization
-from .performance_metrics import PerformanceMetrics
+"""
+工具模块
+"""
 
-__all__ = ['DataGenerator', 'Visualization', 'PerformanceMetrics']
+from .data_generator import FJSPAGVProblemAdapter
+from .performance_metrics import PerformanceMetrics
+from .visualization import GanttChart
+
+__all__ = ['FJSPAGVProblemAdapter', 'PerformanceMetrics', 'GanttChart']

@@ -1,126 +1,181 @@
-from typing import List, Dict, Any
 import numpy as np
-from .base_metaheuristic import BaseMetaheuristic
+from typing import List, Dict, Tuple, Any
+import random
+# 使用相对导入避免循环
+from .base_metaheuristic import BaseMetaheuristic, Chromosome
 
 
-class NSGA2(BaseMetaheuristic):
-    """NSGA-II 多目标优化算法"""
+class ScheduleDecoder:
+    """调度解码器 - 活动调度生成器"""
 
-    def __init__(self, config: Dict):
-        super().__init__(config)
-        self.population_size = config.get('population_size', 100)
-        self.max_generations = config.get('max_generations', 500)
-        self.crossover_rate = config.get('crossover_rate', 0.8)
-        self.mutation_rate = config.get('mutation_rate', 0.2)
+    def __init__(self, problem_data: Dict[str, Any]):
+        self.problem_data = problem_data
 
-    def initialize_population(self):
-        """初始化种群"""
-        self.population = [self.create_random_solution() for _ in range(self.population_size)]
+    def decode(self, chromosome: Chromosome) -> Dict[str, Any]:
+        """将染色体解码为可行的调度方案"""
+        # 这里保持原有的ScheduleDecoder实现
+        # 初始化时间线
+        machine_timelines = {i: [] for i in range(self.problem_data['n_machines'])}
+        agv_timelines = {i: [] for i in range(self.problem_data['n_agvs'])}
+        agv_batteries = {i: self.problem_data['battery_capacity'] for i in range(self.problem_data['n_agvs'])}
 
-    def evaluate_population(self, population: List) -> List[Dict[str, float]]:
-        """评估种群 - 多目标"""
-        fitness = []
-        for individual in population:
-            # 多目标评估
-            objectives = {
-                'makespan': self._calculate_makespan(individual),
-                'energy': self._calculate_energy(individual),
-                'cost': self._calculate_cost(individual)
+        # 记录每个工件的当前状态
+        job_states = {
+            job_id: {
+                'current_time': self.problem_data['release_time'].get(job_id, 0),
+                'completed_operations': 0,
+                'current_location': None
             }
-            fitness.append(objectives)
-        return fitness
-
-    def _calculate_makespan(self, individual: Dict) -> float:
-        """计算完工时间"""
-        # 实现完工时间计算逻辑
-        return np.random.uniform(10, 20)  # 示例
-
-    def _calculate_energy(self, individual: Dict) -> float:
-        """计算能耗"""
-        # 实现能耗计算逻辑
-        return np.random.uniform(15, 25)  # 示例
-
-    def _calculate_cost(self, individual: Dict) -> float:
-        """计算成本"""
-        # 实现成本计算逻辑
-        return np.random.uniform(20, 30)  # 示例
-
-    def selection(self, population: List, fitness: List[Dict]) -> List:
-        """NSGA-II选择操作"""
-        # 实现NSGA-II的选择机制
-        selected = population[:len(population) // 2]  # 简化实现
-        return selected
-
-    def crossover(self, parents: List) -> List:
-        """交叉操作"""
-        offspring = []
-        for i in range(0, len(parents), 2):
-            if i + 1 < len(parents):
-                parent1, parent2 = parents[i], parents[i + 1]
-                child1, child2 = self._perform_crossover(parent1, parent2)
-                offspring.extend([child1, child2])
-        return offspring
-
-    def _perform_crossover(self, parent1: Dict, parent2: Dict) -> tuple:
-        """执行交叉操作"""
-        # 实现具体的交叉逻辑
-        return parent1, parent2  # 简化实现
-
-    def mutation(self, individuals: List) -> List:
-        """变异操作"""
-        mutated = []
-        for individual in individuals:
-            if np.random.random() < self.mutation_rate:
-                mutated.append(self._perform_mutation(individual))
-            else:
-                mutated.append(individual)
-        return mutated
-
-    def _perform_mutation(self, individual: Dict) -> Dict:
-        """执行变异操作"""
-        # 实现具体的变异逻辑
-        return individual  # 简化实现
-
-    def run(self, max_iterations: int = None) -> Dict:
-        """运行NSGA-II算法"""
-        if max_iterations is None:
-            max_iterations = self.max_generations
-
-        self.initialize_population()
-
-        for generation in range(max_iterations):
-            fitness = self.evaluate_population(self.population)
-
-            # 记录最佳解
-            best_idx = self._find_best_solution(fitness)
-            self.best_solution = self.population[best_idx]
-
-            # 选择
-            selected = self.selection(self.population, fitness)
-
-            # 交叉和变异
-            offspring = self.crossover(selected)
-            offspring = self.mutation(offspring)
-
-            # 生成新种群
-            self.population = self._create_new_population(selected, offspring)
-
-            # 记录收敛数据
-            best_fitness = min([sum(f.values()) for f in fitness])
-            self.convergence.append(best_fitness)
-
-        return {
-            'best_solution': self.best_solution,
-            'convergence': self.convergence,
-            'final_population': self.population
+            for job_id in range(self.problem_data['n_jobs'])
         }
 
-    def _find_best_solution(self, fitness: List[Dict]) -> int:
-        """找到最佳解（多目标需要更复杂的机制）"""
-        # 简化实现，使用加权和
-        weighted_fitness = [sum(f.values()) for f in fitness]
-        return np.argmin(weighted_fitness)
+        schedule = {}
+        operation_counter = {job_id: 0 for job_id in range(self.problem_data['n_jobs'])}
 
-    def _create_new_population(self, selected: List, offspring: List) -> List:
-        """创建新种群"""
-        return selected + offspring
+        # 按OS顺序安排工序
+        for job_id in chromosome.OS:
+            op_id = operation_counter[job_id]
+            operation_counter[job_id] += 1
+
+            # 获取分配的机器和AGV
+            if op_id < len(chromosome.MA[job_id]):
+                machine_id, agv_id = chromosome.MA[job_id][op_id]
+            else:
+                machine_id = 0
+                agv_id = 0
+
+            # 1. 计算运输时间窗口
+            transport_info = self._schedule_transport(
+                job_id, op_id, agv_id, job_states[job_id],
+                agv_timelines[agv_id], agv_batteries[agv_id]
+            )
+
+            # 2. 计算加工时间窗口
+            process_info = self._schedule_processing(
+                job_id, op_id, machine_id, transport_info['end_time'],
+                machine_timelines[machine_id]
+            )
+
+            # 3. 更新状态
+            self._update_state(
+                job_id, op_id, machine_id, agv_id, transport_info, process_info,
+                job_states, machine_timelines, agv_timelines, agv_batteries, schedule
+            )
+
+        # 计算目标函数值
+        objectives = self._calculate_objectives(schedule)
+
+        chromosome.schedule = {
+            'machine_timelines': machine_timelines,
+            'agv_timelines': agv_timelines,
+            'job_schedule': schedule,
+            'objectives': objectives
+        }
+        chromosome.objectives = objectives
+
+        return chromosome.schedule
+
+    # 这里包含所有原有的ScheduleDecoder方法...
+    def _schedule_transport(self, job_id: int, op_id: int, agv_id: int,
+                            job_state: Dict, agv_timeline: List, agv_battery: float) -> Dict:
+        # 保持原有实现
+        transport_time = self.problem_data['transport_time'].get((job_id, op_id), 1.0)
+        transport_energy = self.problem_data['transport_energy'].get((job_id, op_id), 0.1) * transport_time
+
+        earliest_start = job_state['current_time']
+
+        if agv_timeline:
+            last_task_end = max([task[1] for task in agv_timeline]) if agv_timeline else 0
+            earliest_start = max(earliest_start, last_task_end)
+
+        if agv_battery - transport_energy < self.problem_data['min_safety_battery']:
+            charge_time = (self.problem_data['battery_capacity'] - agv_battery) / self.problem_data['charging_rate']
+            earliest_start += charge_time
+            transport_start = earliest_start
+            battery_after_charge = self.problem_data['battery_capacity']
+        else:
+            transport_start = earliest_start
+            battery_after_charge = agv_battery
+
+        transport_end = transport_start + transport_time
+        battery_after_transport = battery_after_charge - transport_energy
+
+        return {
+            'start_time': transport_start,
+            'end_time': transport_end,
+            'energy_consumed': transport_energy,
+            'battery_after': battery_after_transport
+        }
+
+    def _schedule_processing(self, job_id: int, op_id: int, machine_id: int,
+                             transport_end_time: float, machine_timeline: List) -> Dict:
+        processing_time = self.problem_data['processing_time'].get((job_id, op_id, machine_id), 2.0)
+        processing_energy = self.problem_data['processing_energy'].get((job_id, op_id, machine_id),
+                                                                       1.0) * processing_time
+
+        earliest_start = transport_end_time
+
+        if machine_timeline:
+            last_task_end = max([task[1] for task in machine_timeline]) if machine_timeline else 0
+            earliest_start = max(earliest_start, last_task_end)
+
+        process_start = earliest_start
+        process_end = process_start + processing_time
+
+        return {
+            'start_time': process_start,
+            'end_time': process_end,
+            'energy_consumed': processing_energy
+        }
+
+    def _update_state(self, job_id: int, op_id: int, machine_id: int, agv_id: int,
+                      transport_info: Dict, process_info: Dict, job_states: Dict,
+                      machine_timelines: Dict, agv_timelines: Dict, agv_batteries: Dict,
+                      schedule: Dict):
+        job_states[job_id]['current_time'] = process_info['end_time']
+        job_states[job_id]['completed_operations'] += 1
+        job_states[job_id]['current_location'] = machine_id
+
+        machine_timelines[machine_id].append((
+            process_info['start_time'],
+            process_info['end_time'],
+            f"P_{job_id}_{op_id}"
+        ))
+
+        agv_timelines[agv_id].append((
+            transport_info['start_time'],
+            transport_info['end_time'],
+            f"T_{job_id}_{op_id}"
+        ))
+
+        agv_batteries[agv_id] = transport_info['battery_after']
+
+        schedule[(job_id, op_id)] = {
+            'machine': machine_id,
+            'agv': agv_id,
+            'transport': (transport_info['start_time'], transport_info['end_time']),
+            'process': (process_info['start_time'], process_info['end_time']),
+            'transport_energy': transport_info['energy_consumed'],
+            'process_energy': process_info['energy_consumed']
+        }
+
+    def _calculate_objectives(self, schedule: Dict) -> Tuple[float, float, float]:
+        makespan = 0
+        total_energy = 0
+        total_cost = 0
+
+        for op_key, op_info in schedule.items():
+            job_id, op_id = op_key
+            machine_id = op_info['machine']
+
+            makespan = max(makespan, op_info['process'][1])
+            total_energy += op_info['transport_energy'] + op_info['process_energy']
+
+            processing_cost_rate = self.problem_data['processing_cost'].get(
+                (job_id, op_id, machine_id), 1.0
+            )
+            processing_cost = processing_cost_rate * (op_info['process'][1] - op_info['process'][0])
+            transport_cost = 0.01 * (op_info['transport'][1] - op_info['transport'][0])
+            total_cost += processing_cost + transport_cost
+
+        return makespan, total_energy, total_cost

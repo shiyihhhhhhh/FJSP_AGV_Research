@@ -1,15 +1,16 @@
 """
-优化算法模块
+算法模块
 """
 
 from .base_algorithm import BaseAlgorithm
-from .metaheuristic.nsga2 import NSGA2
-from .reinforcement_learning.q_learning import QLearning
-from .hybrid_algorithm import HybridAlgorithm
+from .metaheuristic import BaseMetaheuristic, Chromosome, ScheduleDecoder, NSGA2
+from .reinforcement_learning import QLearning
 
 __all__ = [
     'BaseAlgorithm',
+    'BaseMetaheuristic',
+    'Chromosome',
+    'ScheduleDecoder',
     'NSGA2',
-    'QLearning',
-    'HybridAlgorithm'
+    'QLearning'
 ]

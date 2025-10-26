@@ -1,26 +1,28 @@
-from dataclasses import dataclass
-from typing import List, Dict, Any
+"""算法配置参数"""
 
+# 编码方案配置
+ENCODING_CONFIG = {
+    'initialization_methods': ['random', 'neh', 'spt', 'lpt'],
+    'default_method': 'random',
+    'max_operations': 1000,  # 最大工序数限制
+}
 
-@dataclass
-class AlgorithmConfig:
-    """算法配置类"""
-    population_size: int = 100
-    max_generations: int = 500
-    crossover_rate: float = 0.8
-    mutation_rate: float = 0.2
-    weights: List[float] = None
+# 解码器配置
+DECODER_CONFIG = {
+    'battery_management': True,
+    'charging_strategy': 'immediate',  # immediate, delayed
+    'scheduling_policy': 'active',  # active, semi-active
+}
 
-    def __post_init__(self):
-        if self.weights is None:
-            self.weights = [0.4, 0.3, 0.3]
+# 目标函数权重
+OBJECTIVE_WEIGHTS = {
+    'makespan': 0.4,
+    'energy': 0.3,
+    'cost': 0.3
+}
 
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            'population_size': self.population_size,
-            'max_generations': self.max_generations,
-            'crossover_rate': self.crossover_rate,
-            'mutation_rate': self.mutation_rate,
-            'weights': self.weights
-        }
+# 性能参数
+PERFORMANCE_CONFIG = {
+    'max_decode_time': 1.0,  # 最大解码时间（秒）
+    'memory_limit_mb': 1024,  # 内存限制
+}
